@@ -169,13 +169,13 @@ function install(){
         ./configure
         make && make install
         if [ $? -eq 0 ]; then
-            mv $cur_dir/shadowsocks-libev-master/shadowsocks-libev /etc/init.d/shadowsocks
-            chmod +x /etc/init.d/shadowsocks
+            mv $cur_dir/shadowsocks-libev-master/shadowsocks-libev /etc/init.d/shadowsocks-libev
+            chmod +x /etc/init.d/shadowsocks-libev
             # Add run on system start up
-            chkconfig --add shadowsocks
-            chkconfig shadowsocks on
+            chkconfig --add shadowsocks-libev
+            chkconfig shadowsocks-libev on
             # Start shadowsocks
-            /etc/init.d/shadowsocks start
+            /etc/init.d/shadowsocks-libev start
             if [ $? -eq 0 ]; then
                 echo "Shadowsocks-libev start success!"
             else
@@ -219,9 +219,9 @@ function uninstall_shadowsocks_libev(){
     if [ "$answer" = "y" ]; then
         ps -ef | grep -v grep | grep -v ps | grep -i "ss-server" > /dev/null 2>&1
         if [ $? -eq 0 ]; then
-            /etc/init.d/shadowsocks stop
+            /etc/init.d/shadowsocks-libev stop
         fi
-        chkconfig --del shadowsocks
+        chkconfig --del shadowsocks-libev
         # delete config file
         rm -rf /etc/shadowsocks-libev
         # delete shadowsocks
@@ -234,7 +234,7 @@ function uninstall_shadowsocks_libev(){
         rm -f /usr/local/include/shadowsocks.h
         rm -rf /usr/local/lib/pkgconfig
         rm -f /usr/local/share/man/man8/shadowsocks.8
-        rm -f /etc/init.d/shadowsocks
+        rm -f /etc/init.d/shadowsocks-libev
         echo "Shadowsocks-libev uninstall success!"
     else
         echo "uninstall cancelled, Nothing to do"
