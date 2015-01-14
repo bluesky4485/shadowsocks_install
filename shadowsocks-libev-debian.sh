@@ -73,8 +73,8 @@ function pre_install(){
     # Get IP address
     echo "Getting Public IP address, Please wait a moment..."
     IP=`curl -s checkip.dyndns.com | cut -d' ' -f 6  | cut -d'<' -f 1`
-    if [ -z $IP ]; then
-        IP=`curl -s ifconfig.me/ip`
+    if [ $? -ne 0 -o -z $IP ]; then
+        IP=`curl -s -4 ipinfo.io | grep "ip" | awk -F\" '{print $4}'`
     fi
     #Current folder
     cur_dir=`pwd`
@@ -86,7 +86,7 @@ function download_files(){
     if [ -f shadowsocks-libev.zip ];then
         echo "shadowsocks-libev.zip [found]"
     else
-        if ! wget --no-check-certificate https://github.com/madeye/shadowsocks-libev/archive/master.zip -O shadowsocks-libev.zip;then
+        if ! wget --no-check-certificate https://github.com/shadowsocks/shadowsocks-libev/archive/master.zip -O shadowsocks-libev.zip;then
             echo "Failed to download shadowsocks-libev.zip"
             exit 1
         fi
@@ -169,6 +169,7 @@ function install(){
     echo "Welcome to visit:http://teddysun.com/358.html"
     echo "Enjoy it!"
     echo ""
+    exit 0
 }
 
 # Uninstall Shadowsocks-libev
@@ -202,6 +203,10 @@ function uninstall_shadowsocks_libev(){
         rm -f /usr/local/bin/ss-tunnel
         rm -f /usr/local/bin/ss-server
         rm -f /usr/local/bin/ss-redir
+        rm -f /usr/local/lib/libshadowsocks.a
+        rm -f /usr/local/lib/libshadowsocks.la
+        rm -f /usr/local/include/shadowsocks.h
+        rm -rf /usr/local/lib/pkgconfig
         rm -f /usr/local/share/man/man8/shadowsocks.8
         echo "Shadowsocks-libev uninstall success!"
     else

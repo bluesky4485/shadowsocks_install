@@ -10,24 +10,13 @@ export PATH
 
 clear
 echo "#############################################################"
-echo "# Install Shadowsocks(libev) for CentOS6.x (32bit/64bit)"
+echo "# Install Shadowsocks(libev) for CentOS 6 or 7 (32bit/64bit)"
 echo "# Intro: http://teddysun.com/357.html"
 echo "#"
 echo "# Author: Teddysun <i@teddysun.com>"
 echo "#"
 echo "#############################################################"
 echo ""
-
-# Install Shadowsocks-libev
-function install_shadowsocks_libev(){
-    rootness
-    disable_selinux
-    pre_install
-    download_files
-    config_shadowsocks
-    iptables_set
-    install
-}
 
 # Make sure only root can run our script
 function rootness(){
@@ -68,12 +57,9 @@ fi
 
 # Pre-installation settings
 function pre_install(){
-    # Not support CentOS 5.x and 7.x
+    # Not support CentOS 5
     if centosversion 5; then
-        echo "Not support CentOS 5.x, please change to CentOS 6.x and try again."
-        exit 1
-    elif centosversion 7; then
-        echo "Not support CentOS 7.x, please change to CentOS 6.x and try again."
+        echo "Not support CentOS 5, please change to CentOS 6 or 7 and try again."
         exit 1
     fi
     #Set shadowsocks-libev config password
@@ -102,9 +88,11 @@ function pre_install(){
     # Get IP address
     echo "Getting Public IP address, Please wait a moment..."
     IP=`curl -s checkip.dyndns.com | cut -d' ' -f 6  | cut -d'<' -f 1`
-    if [ -z $IP ]; then
-        IP=`curl -s ifconfig.me/ip`
+    if [ $? -ne 0 -o -z $IP ]; then
+        IP=`curl -s -4 ipinfo.io | grep "ip" | awk -F\" '{print $4}'`
     fi
+    echo -e "Your main public IP is\t\033[32m$IP\033[0m"
+    echo ""
     #Current folder
     cur_dir=`pwd`
     cd $cur_dir
@@ -115,7 +103,7 @@ function download_files(){
     if [ -f shadowsocks-libev.zip ];then
         echo "shadowsocks-libev.zip [found]"
     else
-        if ! wget --no-check-certificate https://github.com/madeye/shadowsocks-libev/archive/master.zip -O shadowsocks-libev.zip;then
+        if ! wget --no-check-certificate https://github.com/shadowsocks/shadowsocks-libev/archive/master.zip -O shadowsocks-libev.zip;then
             echo "Failed to download shadowsocks-libev.zip"
             exit 1
         fi
@@ -155,6 +143,7 @@ EOF
 
 # iptables set
 function iptables_set(){
+    echo "iptables start setting..."
     /sbin/service iptables status 1>/dev/null 2>&1
     if [ $? -eq 0 ]; then
         /etc/init.d/iptables status | grep '8989' | grep 'ACCEPT' >/dev/null 2>&1
@@ -162,10 +151,13 @@ function iptables_set(){
             /sbin/iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 8989 -j ACCEPT
             /etc/init.d/iptables save
             /etc/init.d/iptables restart
+        else
+            echo "port 8989 has been set up."
         fi
+    else
+        echo "iptables looks like shutdown, please manually set it if necessary."
     fi
 }
-
 
 # Install 
 function install(){
@@ -213,6 +205,7 @@ function install(){
     echo "Welcome to visit:http://teddysun.com/357.html"
     echo "Enjoy it!"
     echo ""
+    exit 0
 }
 
 # Uninstall Shadowsocks-libev
@@ -236,12 +229,29 @@ function uninstall_shadowsocks_libev(){
         rm -f /usr/local/bin/ss-tunnel
         rm -f /usr/local/bin/ss-server
         rm -f /usr/local/bin/ss-redir
+        rm -f /usr/local/lib/libshadowsocks.a
+        rm -f /usr/local/lib/libshadowsocks.la
+        rm -f /usr/local/include/shadowsocks.h
+        rm -rf /usr/local/lib/pkgconfig
         rm -f /usr/local/share/man/man8/shadowsocks.8
         rm -f /etc/init.d/shadowsocks
         echo "Shadowsocks-libev uninstall success!"
     else
         echo "uninstall cancelled, Nothing to do"
     fi
+}
+
+# Install Shadowsocks-libev
+function install_shadowsocks_libev(){
+    rootness
+    disable_selinux
+    pre_install
+    download_files
+    config_shadowsocks
+    if ! centosversion 7; then
+        iptables_set
+    fi
+    install
 }
 
 # Initialization step
